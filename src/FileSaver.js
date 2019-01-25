@@ -122,9 +122,15 @@ var saveAs = _global.saveAs || (
 
   // Fallback to using FileReader and a popup
   : function saveAs (blob, name, opts, popup) {
+    var isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent)
     // Open a popup immediately do go around popup blocker
     // Mostly only available on user interaction and the fileReader is async so...
-    popup = popup || open('', '_blank')
+    if (!isChromeIOS) {
+      popup = popup || open('', '_blank')
+    } else {
+      popup = null;
+    }
+
     if (popup) {
       popup.document.title =
       popup.document.body.innerText = 'downloading...'
@@ -134,14 +140,13 @@ var saveAs = _global.saveAs || (
 
     var force = blob.type === 'application/octet-stream'
     var isSafari = /constructor/i.test(_global.HTMLElement) || _global.safari
-    var isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent)
 
-    if ((isChromeIOS || (force && isSafari)) && typeof FileReader === 'object') {
+    if ((isChromeIOS || (force && isSafari)) && (typeof FileReader === 'object' || typeof FileReader === 'function')) {
       // Safari doesn't allow downloading of blob URLs
       var reader = new FileReader()
       reader.onloadend = function () {
         var url = reader.result
-        url = isChromeIOS ? url : url.replace(/^data:[^;]*;/, 'data:attachment/file;')
+        url = url.replace(/^data:[^;]*;/, 'data:attachment/file;')
         if (popup) popup.location.href = url
         else location = url
         popup = null // reverse-tabnabbing #460
